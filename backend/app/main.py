@@ -13,15 +13,22 @@ async def health_check():
 @app.post("/api/extract")
 async def extract_videos(request: ExtractionRequest):
     try:
-        # For testing, assuming URL A is YouTube
-        video_a_data = extractor.extract_youtube(request.url_a)
-        
-        # We will handle Instagram specifically later, just testing YouTube for now
-        
+        def process_url(url: str):
+            if "youtube.com" in url or "youtu.be" in url:
+                return extractor.extract_youtube(url)
+            elif "instagram.com" in url:
+                return extractor.extract_instagram(url)
+            else:
+                raise ValueError(f"Unsupported URL: {url}")
+
+        video_a_data = process_url(request.url_a)
+        video_b_data = process_url(request.url_b)
+
         return {
             "status": "success",
             "data": {
-                "video_a": video_a_data.model_dump()
+                "video_a": video_a_data.model_dump(),
+                "video_b": video_b_data.model_dump()
             }
         }
     except Exception as e:
