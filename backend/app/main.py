@@ -1,12 +1,26 @@
 # app/main.py
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks
+from app.services.chatbot import VideoChatAgent, HumanMessage, AIMessage
 from app.core.config import settings
 from app.models.video import ExtractionRequest
 from app.services.ingestion import VideoExtractor
 from app.services.vector_store import VectorService
+from app.services.chatbot import VideoChatAgent, HumanMessage
+from pydantic import BaseModel
+from typing import List
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title=settings.PROJECT_NAME)
+
+# CRITICAL FIX: Allow React to talk to FastAPI
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # In production, restrict this to your frontend URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Initialize our services
 extractor = VideoExtractor()
@@ -46,3 +60,41 @@ async def extract_videos(request: ExtractionRequest, background_tasks: Backgroun
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+# Setup chat message tracking schema
+class ChatMessageInput(BaseModel):
+    role: str
+    content: str
+
+class ChatRequest(BaseModel):
+    messages: List[ChatMessageInput]
+    video_ids: List[str]
+
+# Instantiate our conversational orchestrator
+chat_agent = VideoChatAgent()
+
+@app.post("/api/chat")
+async def chat_with_videos(request: ChatRequest):
+    try:
+        # Convert incoming list into LangChain Message structures
+        formatted_messages = []
+        for msg in request.messages:
+            if msg.role == "user":
+                formatted_messages.append(HumanMessage(content=msg.content))
+            else:
+                formatted_messages.append(AIMessage(content=msg.content))
+                
+        # Fire up the state machine execution loop
+        initial_state = {
+            "messages": formatted_messages,
+            "video_ids": request.video_ids,
+            "context": "",
+            "next_node": ""
+        }
+        
+        final_output = chat_agent.agent.invoke(initial_state)
+        output_message = final_output["messages"][-1].content
+        
+        return {"status": "success", "response": output_message}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))    
