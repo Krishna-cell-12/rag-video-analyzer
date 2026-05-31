@@ -1,4 +1,4 @@
-from langchain_google_genai import GoogleGenerativeAIEmbeddings  # Fixed Name
+from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores.pgvector import PGVector
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from app.models.video import VideoMetadata
@@ -6,10 +6,10 @@ from app.core.config import settings
 
 class VectorService:
     def __init__(self):
-        # Update the instantiation here as well
-        self.embeddings = GoogleGenerativeAIEmbeddings(
-            model="models/text-embedding-004",
-            google_api_key=settings.GEMINI_API_KEY
+        # Using OpenAI embeddings — reliable, stable API, key already configured
+        self.embeddings = OpenAIEmbeddings(
+            model="text-embedding-3-small",
+            openai_api_key=settings.OPENAI_API_KEY
         )
         self.connection_string = settings.DATABASE_URL
         self.collection_name = "video_transcripts"

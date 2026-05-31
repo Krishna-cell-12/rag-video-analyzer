@@ -1,7 +1,8 @@
 from typing import Annotated, TypedDict, List, Dict, Any
 from langgraph.graph import StateGraph, END
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
-from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings # Fixed Name
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores.pgvector import PGVector
 from app.core.config import settings
 
@@ -18,10 +19,10 @@ class VideoChatAgent:
             google_api_key=settings.GEMINI_API_KEY,
             streaming=True
         )
-        # Update the instantiation here as well
-        self.embeddings = GoogleGenerativeAIEmbeddings(
-            model="models/embedding-001",
-            google_api_key=settings.GEMINI_API_KEY
+        # Must match vector_store.py — same model = same vector space
+        self.embeddings = OpenAIEmbeddings(
+            model="text-embedding-3-small",
+            openai_api_key=settings.OPENAI_API_KEY
         )
         self.store = PGVector(
             collection_name="video_transcripts",
