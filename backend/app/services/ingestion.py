@@ -4,6 +4,20 @@ import time
 import yt_dlp
 from faster_whisper import WhisperModel
 from app.models.video import VideoMetadata
+import os
+from groq import Groq
+
+# Initialize the Groq client (reads GROQ_API_KEY from environment)
+groq_client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+
+def transcribe_audio_file(file_path: str) -> str:
+    """Sends local audio payload to Groq Cloud for ultra-fast free transcription"""
+    with open(file_path, "rb") as audio_file:
+        transcription = groq_client.audio.transcriptions.create(
+            file=(os.path.basename(file_path), audio_file.read()),
+            model="whisper-large-v3",
+        )
+    return transcription.text
 
 
 class VideoExtractor:

@@ -3,6 +3,16 @@ from langchain_community.vectorstores.pgvector import PGVector
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from app.models.video import VideoMetadata
 from app.core.config import settings
+import os
+
+DATABASE_URL = os.getenv(
+    "DATABASE_URL", 
+    "postgresql://krishna:localpassword@localhost:5432/rag_db"
+)
+
+# Render changes 'postgres://' prefixes sometimes; normalize for SQLAlchemy/PGVector if needed:
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 class VectorService:
     def __init__(self):
